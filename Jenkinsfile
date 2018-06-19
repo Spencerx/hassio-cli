@@ -20,6 +20,7 @@ node {
 
         docker.image('homeassistant/i386-hassio-supervisor')
         docker.image('homeassistant/i386-homeassistant')
+        docker.image('homeassistant/i386-addon-ssh')
 
         withEnv(["HADATA=${WORKSPACE}/tmp/hassioa", "UUID=63afb61b-e617-4329-9679-84ecce5c407a"]) {
           sh 'mkdir -p ${HADATA}'
@@ -32,8 +33,14 @@ node {
               -e HOMEASSISTANT_REPOSITORY=homeassistant/i386-homeassistant \
               -e MACHINE_ID=${UUID}') 
               { c ->
-                docker.image('homeassistant/i386-hassio-supervisor').inside("--link ${c.id}:hassio") {
-                    //sh 'while ! (curl -s http://hassio/supervisor/pings | grep ok); do sleep 1; done'
+                //docker.image('homeassistant/i386-homeassistant').inside("--link ${c.id}:hassio") {
+                    
+                //}
+                docker.image('homeassistant/i386-addon-ssh').inside("--link ${c.id}:hassio -e 'TOKEN=${UUID}'") {
+                    sh 'while !(curl -s http://hassio/supervisor/ping | grep "ok"); do sleep 1; done'
+                    sh 'hassio --version'
+                    sh 'curl -H X-HASSIO-KEY=${TOKEN} -s http://hassio/homeassistant/info'
+                    sh 'sleep 60'
                 }
           }
         }
